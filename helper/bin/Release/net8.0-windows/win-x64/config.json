@@ -1,0 +1,17 @@
+{
+  // Port WebSocket (hanya listen di 127.0.0.1)
+  "Port": 8765,
+
+  // false = murni event-driven (state sesi WASAPI Active/Inactive).
+  // true  = sesi "Active" tapi hening dianggap tidak mengeluarkan suara
+  //         (membaca peak meter tiap 250 ms, hanya untuk sesi yang Active).
+  "UsePeakMeter": false,
+  "PeakThreshold": 0.001,
+  "PeakHoldMs": 1500,
+
+  // Jaring pengaman: scan ulang sesi tiap N detik (0 = nonaktif).
+  "SafetyRescanSeconds": 10,
+
+  // Proses yang tidak pernah dianggap sebagai audio eksternal.
+  "IgnoredProcesses": [ "spotify.exe", "autoduck.helper.exe" ]
+}
