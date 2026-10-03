@@ -1,6 +1,6 @@
 # AutoDuck
 
-Lowers Spotify's volume while other apps (YouTube, Discord, games…) play audio, then restores it. **Windows only.**
+Lowers Spotify's volume while other apps (YouTube, Discord, etc…) play audio, then restores it to normal volume. supported os: **Windows**
 
 ## Install
 
