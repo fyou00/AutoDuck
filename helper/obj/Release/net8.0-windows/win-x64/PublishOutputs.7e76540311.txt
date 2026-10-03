@@ -1,8 +1,0 @@
-C:\Users\fathur\AppData\Local\Temp\AutoDuck\AutoDuck\helper\publish\AutoDuck.Helper.exe
-C:\Users\fathur\AppData\Local\Temp\AutoDuck\AutoDuck\helper\publish\config.json
-C:\Users\fathur\AppData\Local\Temp\AutoDuck\AutoDuck\helper\publish\AutoDuck.Helper.dll
-C:\Users\fathur\AppData\Local\Temp\AutoDuck\AutoDuck\helper\publish\AutoDuck.Helper.deps.json
-C:\Users\fathur\AppData\Local\Temp\AutoDuck\AutoDuck\helper\publish\AutoDuck.Helper.runtimeconfig.json
-C:\Users\fathur\AppData\Local\Temp\AutoDuck\AutoDuck\helper\publish\AutoDuck.Helper.pdb
-C:\Users\fathur\AppData\Local\Temp\AutoDuck\AutoDuck\helper\publish\NAudio.Core.dll
-C:\Users\fathur\AppData\Local\Temp\AutoDuck\AutoDuck\helper\publish\NAudio.Wasapi.dll
