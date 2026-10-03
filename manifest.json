@@ -3,8 +3,8 @@
     "name": "AutoDuck",
     "description": "Automatically lowers Spotify's volume while other apps play audio. Requires the AutoDuck Helper (Windows).",
     "main": "spicetify/autoduck.js",
-    "readme": "https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/AutoDuck/main/README.md",
-    "authors": [{ "name": "YOUR_GITHUB_USERNAME", "url": "https://github.com/YOUR_GITHUB_USERNAME" }],
+    "readme": "https://raw.githubusercontent.com/fyou00/AutoDuck/main/README.md",
+    "authors": [{ "name": "fyou00", "url": "https://github.com/fyou00" }],
     "tags": ["audio", "volume", "ducking", "windows"]
   }
 ]
