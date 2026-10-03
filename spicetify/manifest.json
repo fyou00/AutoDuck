@@ -1,11 +1,10 @@
 [
   {
     "name": "AutoDuck",
-    "description": "Otomatis menurunkan volume Spotify saat aplikasi lain memutar audio (butuh AutoDuck.Helper untuk Windows).",
-    "main": "autoduck.js",
-    "readme": "README.md",
-    "authors": [{ "name": "Fathur", "url": "https://github.com/" }],
-    "tags": ["audio", "volume", "ducking", "windows"],
-    "preview": "preview.png"
+    "description": "Automatically lowers Spotify's volume while other apps play audio. Requires the AutoDuck Helper (Windows).",
+    "main": "spicetify/autoduck.js",
+    "readme": "https://raw.githubusercontent.com/fyou00/AutoDuck/main/README.md",
+    "authors": [{ "name": "fyou00", "url": "https://github.com/fyou00" }],
+    "tags": ["audio", "volume", "ducking", "windows"]
   }
 ]
