@@ -2,11 +2,11 @@ using System.Net;
 using System.Runtime.InteropServices;
 using AutoDuck.Helper;
 
-// Penggunaan:
-//   AutoDuck.Helper.exe              -> jalankan helper (console)
-//   AutoDuck.Helper.exe --list       -> Phase 1: tampilkan sesi audio lalu keluar
-//   AutoDuck.Helper.exe --verbose    -> log semua perubahan state sesi (termasuk Spotify)
-//   AutoDuck.Helper.exe --background -> lepas console (dipakai saat startup Windows)
+// Usage:
+//   AutoDuck.Helper.exe              -> run the helper (console)
+//   AutoDuck.Helper.exe --list       -> Phase 1: list audio sessions, then exit
+//   AutoDuck.Helper.exe --verbose    -> log every session state change (including Spotify)
+//   AutoDuck.Helper.exe --background -> detach the console (used at Windows startup)
 
 Logger.Init(args.Contains("--verbose"));
 var config = Configuration.Load();
@@ -15,7 +15,7 @@ if (args.Contains("--list"))
 {
     using var probe = new AudioSessionMonitor(config);
     probe.Start();
-    Logger.Info("Daftar sesi audio saat ini:");
+    Logger.Info("Current audio sessions:");
     probe.Dump();
     return 0;
 }
@@ -23,7 +23,7 @@ if (args.Contains("--list"))
 using var single = new Mutex(true, @"Local\AutoDuck.Helper", out var created);
 if (!created)
 {
-    Logger.Warn("AutoDuck.Helper sudah berjalan. Keluar.");
+    Logger.Warn("AutoDuck.Helper is already running. Exiting.");
     return 1;
 }
 
@@ -33,7 +33,7 @@ using var monitor = new AudioSessionMonitor(config);
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
-// Hanya loopback IPv4 -> tidak terjangkau dari jaringan, tidak butuh admin.
+// IPv4 loopback only -> unreachable from the network, no admin rights needed.
 builder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, config.Port));
 var app = builder.Build();
 
@@ -44,14 +44,14 @@ app.Run(server.HandleAsync);
 monitor.Start();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; app.Lifetime.StopApplication(); };
 
-Logger.Info($"AutoDuck.Helper aktif di ws://127.0.0.1:{config.Port}  (log: %LOCALAPPDATA%\\AutoDuck\\helper.log)");
+Logger.Info($"AutoDuck.Helper listening on ws://127.0.0.1:{config.Port}  (log: %LOCALAPPDATA%\\AutoDuck\\helper.log)");
 try
 {
     await app.RunAsync();
 }
 catch (IOException ex)
 {
-    Logger.Error($"Tidak bisa listen di port {config.Port} (mungkin dipakai program lain): {ex.Message}");
+    Logger.Error($"Cannot listen on port {config.Port} (maybe another program is using it): {ex.Message}");
     return 2;
 }
 return 0;

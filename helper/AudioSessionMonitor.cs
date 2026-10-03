@@ -17,12 +17,12 @@ public sealed record AudioState(
 }
 
 /// <summary>
-/// Memantau semua sesi audio (per aplikasi) di semua render endpoint memakai WASAPI.
+/// Watches all per-application audio sessions on every render endpoint using WASAPI.
 /// Event-driven:
-///  - IAudioSessionEvents.OnStateChanged   -> sesi Active/Inactive/Expired
-///  - IAudioSessionNotification            -> sesi baru dibuat (mis. tab Chrome mulai bunyi)
-///  - IMMNotificationClient                -> device ditambah/dicabut/ganti
-/// Satu-satunya timer berulang: scan pengaman (default 10 dtk) dan, opsional, peak meter.
+///  - IAudioSessionEvents.OnStateChanged   -> session Active/Inactive/Expired
+///  - IAudioSessionNotification            -> new session created (e.g. a Chrome tab starts playing)
+///  - IMMNotificationClient                -> device added/removed/changed
+/// Only recurring timers: a safety rescan (default 10 s) and, optionally, the peak meter.
 /// </summary>
 public sealed class AudioSessionMonitor : IMMNotificationClient, IDisposable
 {
@@ -45,7 +45,7 @@ public sealed class AudioSessionMonitor : IMMNotificationClient, IDisposable
 
         public bool IsAudible(long now, int holdMs) => now - LastAudibleTicks <= holdMs;
 
-        // Callback ini berjalan di thread COM: jangan panggil COM lain di sini, cukup jadwalkan Recompute.
+        // This callback runs on a COM thread: do not call other COM APIs here, just schedule a Recompute.
         public void OnStateChanged(AudioSessionState state)
         {
             State = state;
@@ -109,18 +109,18 @@ public sealed class AudioSessionMonitor : IMMNotificationClient, IDisposable
             _peakTimer = new Timer(_ => PollPeaks(), null, 250, 250);
     }
 
-    // ---------- Phase 1: dump sesi ----------
+    // ---------- Phase 1: dump sessions ----------
     public void Dump()
     {
         lock (_gate)
         {
-            if (_tracked.Count == 0) Logger.Info("(tidak ada sesi audio)");
+            if (_tracked.Count == 0) Logger.Info("(no audio sessions)");
             foreach (var t in _tracked.Values.OrderBy(t => t.Process, StringComparer.OrdinalIgnoreCase))
-                Logger.Info($"[AudioSession] {t.Process} -> {Describe(t.State)}{(t.Ignored ? "  (diabaikan)" : "")}");
+                Logger.Info($"[AudioSession] {t.Process} -> {Describe(t.State)}{(t.Ignored ? "  (ignored)" : "")}");
         }
     }
 
-    // ---------- Pembangunan ulang (start / device berubah) ----------
+    // ---------- Rebuild (startup / device change) ----------
     private void Rebuild()
     {
         lock (_gate)
@@ -145,7 +145,7 @@ public sealed class AudioSessionMonitor : IMMNotificationClient, IDisposable
             }
             catch (Exception ex)
             {
-                Logger.Error($"Gagal enumerasi audio device: {ex.Message}");
+                Logger.Error($"Failed to enumerate audio devices: {ex.Message}");
             }
         }
         Recompute();
@@ -153,7 +153,7 @@ public sealed class AudioSessionMonitor : IMMNotificationClient, IDisposable
 
     private void OnSessionCreated(string devId, IAudioSessionControl raw)
     {
-        // Jangan lakukan kerja COM di dalam callback notifikasi -> pindah ke thread pool.
+        // Do not do COM work inside the notification callback -> move to the thread pool.
         Task.Run(() =>
         {
             lock (_gate)
@@ -183,7 +183,7 @@ public sealed class AudioSessionMonitor : IMMNotificationClient, IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Warn($"Gagal mendaftarkan event untuk {name}: {ex.Message}");
+            Logger.Warn($"Failed to register events for {name}: {ex.Message}");
             ctl.Dispose();
             return;
         }
@@ -213,9 +213,9 @@ public sealed class AudioSessionMonitor : IMMNotificationClient, IDisposable
         }
     }
 
-    // ---------- Jaring pengaman ----------
-    // Manager baru dari enumerator baru selalu mengambil daftar sesi terbaru.
-    // (AudioSessionManager.RefreshSessions() sengaja tidak dipakai karena melepas notifikasi.)
+    // ---------- Safety net ----------
+    // A new manager from a new enumerator always fetches the latest session list.
+    // (AudioSessionManager.RefreshSessions() is deliberately avoided because it drops notifications.)
     private void Rescan()
     {
         var changed = false;
@@ -242,12 +242,12 @@ public sealed class AudioSessionMonitor : IMMNotificationClient, IDisposable
                     else dev.Dispose();
                 }
             }
-            catch (Exception ex) { Logger.Warn($"Rescan gagal: {ex.Message}"); }
+            catch (Exception ex) { Logger.Warn($"Rescan failed: {ex.Message}"); }
         }
         if (changed) Recompute();
     }
 
-    // ---------- Opsional: peak meter ----------
+    // ---------- Optional: peak meter ----------
     private void PollPeaks()
     {
         var now = Environment.TickCount64;
@@ -268,8 +268,8 @@ public sealed class AudioSessionMonitor : IMMNotificationClient, IDisposable
         Recompute();
     }
 
-    // ---------- Hitung state agregat ----------
-    private void ScheduleRecompute() => _recomputeTimer.Change(40, Timeout.Infinite);   // gabung burst event
+    // ---------- Compute aggregate state ----------
+    private void ScheduleRecompute() => _recomputeTimer.Change(40, Timeout.Infinite);   // coalesce event bursts
     private void ScheduleRebuild() => _rebuildTimer.Change(500, Timeout.Infinite);
 
     private void Recompute()
@@ -311,7 +311,7 @@ public sealed class AudioSessionMonitor : IMMNotificationClient, IDisposable
         _ => "EXPIRED"
     };
 
-    // ---------- IMMNotificationClient (device berubah) ----------
+    // ---------- IMMNotificationClient (device changes) ----------
     public void OnDeviceStateChanged(string deviceId, DeviceState newState) => ScheduleRebuild();
     public void OnDeviceAdded(string pwstrDeviceId) => ScheduleRebuild();
     public void OnDeviceRemoved(string deviceId) => ScheduleRebuild();

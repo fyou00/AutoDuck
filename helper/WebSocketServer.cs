@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 namespace AutoDuck.Helper;
 
 /// <summary>
-/// Protocol (JSON, satu message per frame teks):
+/// Protocol (JSON, one message per text frame):
 ///   helper -> client : {"type":"hello","version":1}
 ///                      {"type":"audio_state","active":true,"process":"chrome.exe",
 ///                       "processes":["chrome.exe"],"sessions":[{"process":"chrome.exe","pid":1234}],"ts":...}
@@ -20,7 +20,7 @@ public sealed class WebSocketServer
     private sealed class Client
     {
         public required WebSocket Socket { get; init; }
-        public SemaphoreSlim Lock { get; } = new(1, 1);   // WebSocket tidak boleh SendAsync paralel
+        public SemaphoreSlim Lock { get; } = new(1, 1);   // a WebSocket must not run SendAsync concurrently
     }
 
     private static readonly JsonSerializerOptions Json = new()
@@ -42,7 +42,7 @@ public sealed class WebSocketServer
         if (!ctx.WebSockets.IsWebSocketRequest)
         {
             ctx.Response.StatusCode = 426;
-            await ctx.Response.WriteAsync("AutoDuck.Helper: hubungkan memakai WebSocket.");
+            await ctx.Response.WriteAsync("AutoDuck.Helper: connect using a WebSocket.");
             return;
         }
 
@@ -50,7 +50,7 @@ public sealed class WebSocketServer
         var client = new Client { Socket = socket };
         var id = Guid.NewGuid();
         _clients[id] = client;
-        Logger.Info($"Client terhubung ({_clients.Count} aktif)");
+        Logger.Info($"Client connected ({_clients.Count} active)");
 
         try
         {
@@ -84,7 +84,7 @@ public sealed class WebSocketServer
         finally
         {
             _clients.TryRemove(id, out _);
-            Logger.Info($"Client terputus ({_clients.Count} aktif)");
+            Logger.Info($"Client disconnected ({_clients.Count} active)");
         }
     }
 
@@ -112,7 +112,7 @@ public sealed class WebSocketServer
             if (c.Socket.State == WebSocketState.Open)
                 await c.Socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
         }
-        catch { /* client putus; dibersihkan oleh loop receive */ }
+        catch { /* client dropped; cleaned up by the receive loop */ }
         finally { c.Lock.Release(); }
     }
 }

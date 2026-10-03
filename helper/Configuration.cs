@@ -34,7 +34,7 @@ public sealed class Configuration
         }
         catch (Exception ex)
         {
-            Logger.Warn($"config.json tidak bisa dibaca, memakai default: {ex.Message}");
+            Logger.Warn($"Could not read config.json, using defaults: {ex.Message}");
         }
         return new Configuration();
     }

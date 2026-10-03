@@ -29,7 +29,7 @@ public static class Logger
         var line = $"{DateTime.Now:HH:mm:ss.fff} [{level}] {msg}";
         lock (Gate)
         {
-            try { Console.WriteLine(line); } catch { /* console bisa sudah dilepas (--background) */ }
+            try { Console.WriteLine(line); } catch { /* console may already be detached (--background) */ }
             if (_file != null) { try { File.AppendAllText(_file, line + Environment.NewLine); } catch { } }
         }
     }
