@@ -6,9 +6,13 @@ Lowers Spotify's volume while other apps (YouTube, Discord, etc…) play audio, 
 
 1. **Helper** – download `AutoDuck.Helper-win-x64.zip` from [Releases](../../releases), unzip it anywhere, and run `AutoDuck.Helper.exe`.
    Want it to start with Windows? Run `install-startup.ps1` (right-click → *Run with PowerShell*).
-2. **Extension** – in Spotify open **Marketplace → Extensions**, search **AutoDuck**, click **Install**.
-   Manual: copy `spicetify/autoduck.js` to `%APPDATA%\spicetify\Extensions`, then run
-   `spicetify config extensions autoduck.js` and `spicetify apply`.
+2. **Clone the repo** 
+   `PS C:\Users\...> git clone https://github.com/fyou00/AutoDuck`
+3. **Copy spicetify.js**
+   `PS C:\Users\...> copy spicetify\autoduck.js "$env:APPDATA\spicetify\Extensions\"`
+4. **Apply changes**
+   `spicetify config extensions autoduck.js`
+   `spicetify apply`
 
 Requires [Spicetify](https://spicetify.app).
 
