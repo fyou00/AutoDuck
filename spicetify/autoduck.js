@@ -25,9 +25,9 @@
   // ───────────────────────── Config ─────────────────────────
   const DEFAULTS = {
     enabled: true,
-    normalVolume: 80, // % — only used when "Always restore to Normal Volume" is on
-    duckedVolume: 30, // %
-    restoreDelayMs: 1500,
+    normalVolume: 100, // % — only used when "Always restore to Normal Volume" is on
+    duckedVolume: 80, // %
+    restoreDelayMs: 600,
     fadeMs: 300,
     useFixedNormal: false,
     triggerMode: "any", // "any" | "selected"
