@@ -1,17 +1,11 @@
 {
-  // WebSocket port (listens on 127.0.0.1 only). If you change it, change it in the extension settings too.
   "Port": 8765,
 
-  // false = purely event-driven (WASAPI session state Active/Inactive).
-  // true  = an "Active" but silent session is treated as not playing
-  //         (reads the peak meter every 250 ms, only for sessions that are Active).
-  "UsePeakMeter": false,
+  "UsePeakMeter": true,
   "PeakThreshold": 0.001,
   "PeakHoldMs": 1500,
 
-  // Safety net: rescan sessions every N seconds (0 = off).
   "SafetyRescanSeconds": 10,
 
-  // Processes that never count as external audio.
   "IgnoredProcesses": [ "spotify.exe", "autoduck.helper.exe" ]
 }
