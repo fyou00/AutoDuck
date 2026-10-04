@@ -79,22 +79,52 @@
   let previousVolume = getVol(); // volume before ducking (0..1)
   let lastSet = previousVolume; // last volume we set ourselves
   let fadeTimer = null;
+  let verifyTimer = null;
+  let lastSetAt = 0; // when we last called setVolume
+  let lastRestoreAt = -1e9; // when the last restore finished
+  let lastRestoreTarget = 0;
   let restoreTimer = null;
   let watchTimer = null;
 
   const persist = () => Spicetify.LocalStorage.set(PENDING_KEY, JSON.stringify({ previousVolume }));
   const clearPersist = () => Spicetify.LocalStorage.remove(PENDING_KEY);
 
+  const pct = (v) => Math.round(v * 100);
+  function applyVol(v) {
+    lastSet = v;
+    lastSetAt = performance.now();
+    setVol(v);
+  }
+
+  // Spotify can drop or reorder rapid setVolume calls, so re-check the final value and retry.
+  function verify(target, attempt) {
+    clearTimeout(verifyTimer);
+    verifyTimer = setTimeout(() => {
+      const cur = getVol();
+      if (Math.abs(cur - target) > 0.02 && attempt < 3) {
+        log(`volume ended at ${pct(cur)}%, expected ${pct(target)}% → retrying`);
+        try { applyVol(target); } catch (e) { log("setVolume failed:", e); }
+        verify(target, attempt + 1);
+      }
+    }, 250);
+  }
+
+  let fadeGen = 0;
   function fadeTo(target, ms, done) {
     clearInterval(fadeTimer);
     fadeTimer = null;
-    const from = getVol();
-    if (ms <= 0 || Math.abs(from - target) < 0.005) {
+    const gen = ++fadeGen;
+    const finish = () => {
       setVol(target);
       lastSet = target;
+      // Re-assert once: rapid setVolume calls can be dropped, leaving the volume slightly off-target.
+      setTimeout(() => {
+        if (gen === fadeGen) setVol(target);
+      }, 250);
       done && done();
-      return;
-    }
+    };
+    const from = getVol();
+    if (ms <= 0 || Math.abs(from - target) < 0.005) return finish();
     const t0 = performance.now();
     fadeTimer = setInterval(() => {
       const k = Math.min(1, (performance.now() - t0) / ms);
@@ -104,25 +134,34 @@
       if (k >= 1) {
         clearInterval(fadeTimer);
         fadeTimer = null;
-        done && done();
+        finish();
       }
     }, 25);
   }
 
   // Manual-change detection: only runs while ducked (not permanent polling).
+  let mismatches = 0;
   function startWatch() {
     stopWatch();
+    mismatches = 0;
     watchTimer = setInterval(() => {
-      if (fadeTimer || !ducked) return;
-      const v = getVol();
-      if (Math.abs(v - lastSet) > 0.02) {
-        log(`volume changed manually while ducked → ${Math.round(v * 100)}% will be restored`);
-        previousVolume = v;
-        lastSet = v;
-        manualOverride = true;
-        persist();
-        render();
+      if (fadeTimer || !ducked) {
+        mismatches = 0;
+        return;
       }
+      const v = getVol();
+      if (Math.abs(v - lastSet) <= 0.05) {
+        mismatches = 0;
+        return;
+      }
+      if (++mismatches < 2) return; // must differ on two consecutive checks (~1 s)
+      mismatches = 0;
+      log(`volume changed manually while ducked (expected ${Math.round(lastSet * 100)}%, got ${Math.round(v * 100)}%) → ${Math.round(v * 100)}% will be restored`);
+      previousVolume = v;
+      lastSet = v;
+      manualOverride = true;
+      persist();
+      render();
     }, 500);
   }
   function stopWatch() {
@@ -137,7 +176,10 @@
     clearTimeout(restoreTimer);
     restoreTimer = null;
     if (!ducked) {
-      previousVolume = getVol();
+      const cur = getVol();
+      // Right after our own restore getVolume() can lag behind: trust the value we just set.
+      previousVolume =
+        performance.now() - lastRestoreAt < 3000 && Math.abs(cur - lastRestoreTarget) > 0.02 ? lastRestoreTarget : cur;
       lastSet = previousVolume;
       ducked = true;
       manualOverride = false;
@@ -154,6 +196,7 @@
   }
 
   function scheduleRestore() {
+    if (restoring && !fadeTimer) restoring = false; // watchdog: a restore flag without a running fade is stale
     if (!ducked || restoreTimer || restoring) return;
     restoreTimer = setTimeout(() => {
       restoreTimer = null;
@@ -165,7 +208,10 @@
   function doRestore() {
     restoring = true;
     render();
-    fadeTo(restoreTarget(), cfg.fadeMs, () => {
+    const target = restoreTarget();
+    fadeTo(target, cfg.fadeMs, () => {
+      lastRestoreAt = performance.now();
+      lastRestoreTarget = target;
       restoring = false;
       ducked = false;
       manualOverride = false;
